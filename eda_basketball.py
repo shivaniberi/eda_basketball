@@ -15,15 +15,16 @@ selected_year = st.sidebar.selectbox("Year", list(reversed(range(1950, 2020))))
 """
 Parsing basketball players' info from https://www.basketball-reference.com
 """
-@st.cache
+@st.cache_data
 def parse_data(year: str):
     url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
     parsed_df = pd.read_html(url, header=0)[0]
     parsed_df = parsed_df.drop(parsed_df[parsed_df['Age'] == 'Age'].index)
     parsed_df = parsed_df.fillna(0)
     parsed_df = parsed_df.drop(['Rk'], axis=1)
+
     # Convert datatype to work with age filter
-    parsed_df['Age'] = parsed_df['Age'].astype(str).astype(int)
+    parsed_df['Age'] = pd.to_numeric(parsed_df['Age'], errors='coerce').fillna(0).astype(int)
     return parsed_df
 
 # Load player statistics for the selected year
@@ -39,10 +40,10 @@ selected_position = st.sidebar.multiselect("Position", player_positions, player_
 
 # Unique age values for the slider
 unique_age_values = df_player_stat_dataset.Age.unique()
-minValue, maxValue = min(unique_age_values), max(unique_age_values)
+minValue, maxValue = int(min(unique_age_values)), int(max(unique_age_values))
 
 # Age filter
-selected_age = st.sidebar.slider("Age", int(minValue), int(maxValue), (int(minValue), int(maxValue)), 1)
+selected_age = st.sidebar.slider("Age", minValue, maxValue, (minValue, maxValue), 1)
 min_age, max_age = selected_age
 
 # Filtered dataset based on selections
@@ -53,7 +54,7 @@ df_selected_dataset = df_player_stat_dataset[
 
 # Display dataframe
 st.header('Display Player Stats of Selected Team(s)')
-st.write(f'Data Dimension  Row : {df_selected_dataset.shape[0]} and Col : {df_selected_dataset.shape[1]}')
+st.write(f'Data Dimension: Rows: {df_selected_dataset.shape[0]}, Columns: {df_selected_dataset.shape[1]}')
 st.dataframe(df_selected_dataset)
 
 def download_dataset(dataset):
@@ -80,5 +81,5 @@ if st.button("Inter-correlation Heatmap"):
         try:
             sns.heatmap(corr, mask=mask, vmax=1, square=True, annot=True, fmt=".2f")
         except ValueError:
-            pass
+            st.write("Error in generating heatmap.")
     st.pyplot(f)
