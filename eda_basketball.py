@@ -29,8 +29,9 @@ def parse_data(year: str):
 # Load player statistics for the selected year
 df_player_stat_dataset = parse_data(str(selected_year))
 
-# Convert 'Tm' column to strings before sorting
-sorted_dataset_by_team = sorted(df_player_stat_dataset['Tm'].astype(str).unique())
+# Ensure the 'Tm' column is converted to string for sorting to avoid type errors
+df_player_stat_dataset['Tm'] = df_player_stat_dataset['Tm'].astype(str)
+sorted_dataset_by_team = sorted(df_player_stat_dataset['Tm'].unique())
 
 # Team filter
 selected_team = st.sidebar.multiselect("Team", sorted_dataset_by_team, sorted_dataset_by_team)
@@ -40,7 +41,7 @@ player_positions = ['C', 'PF', 'SF', 'PG', 'SG']
 selected_position = st.sidebar.multiselect("Position", player_positions, player_positions)
 
 # Unique age values for the slider
-unique_age_values = df_player_stat_dataset.Age.unique()
+unique_age_values = df_player_stat_dataset['Age'].unique()
 minValue, maxValue = int(min(unique_age_values)), int(max(unique_age_values))
 
 # Age filter
