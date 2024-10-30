@@ -19,32 +19,39 @@ Parsing basketball players' info from https://www.basketball-reference.com
 def parse_data(year: str):
     url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
     parsed_df = pd.read_html(url, header=0)[0]
-    parsed_df = parsed_df.drop(parsed_df[parsed_df['Age'] == 'Age'].index)  # Remove header rows within data
+    
+    # Remove any potential header rows within data and handle missing values
+    parsed_df = parsed_df.drop(parsed_df[parsed_df['Age'] == 'Age'].index)
     parsed_df = parsed_df.fillna(0)
-    parsed_df = parsed_df.drop(['Rk'], axis=1)  # Drop 'Rk' column
-    # Convert datatype to work with age filter
+    parsed_df = parsed_df.drop(['Rk'], axis=1)
+
+    # Convert datatype of 'Age' to work with age filter
     parsed_df['Age'] = pd.to_numeric(parsed_df['Age'], errors='coerce').fillna(0).astype(int)
+
+    # Check for 'Tm' column and rename if necessary
+    if 'Tm' in parsed_df.columns:
+        parsed_df['Tm'] = parsed_df['Tm'].astype(str)
+    elif 'Team' in parsed_df.columns:
+        parsed_df = parsed_df.rename(columns={'Team': 'Tm'})
+    else:
+        st.error("The dataset does not contain 'Tm' or 'Team' columns.")
+    
     return parsed_df
 
 # Load player statistics for the selected year
 df_player_stat_dataset = parse_data(str(selected_year))
 
-# Ensure the 'Tm' column is converted to string for sorting to avoid type errors
-df_player_stat_dataset['Tm'] = df_player_stat_dataset['Tm'].astype(str)
-sorted_dataset_by_team = sorted(df_player_stat_dataset['Tm'].unique())
-
 # Team filter
+sorted_dataset_by_team = sorted(df_player_stat_dataset['Tm'].unique())
 selected_team = st.sidebar.multiselect("Team", sorted_dataset_by_team, sorted_dataset_by_team)
 
 # Position filter
 player_positions = ['C', 'PF', 'SF', 'PG', 'SG']
 selected_position = st.sidebar.multiselect("Position", player_positions, player_positions)
 
-# Unique age values for the slider
+# Age filter
 unique_age_values = df_player_stat_dataset['Age'].unique()
 minValue, maxValue = int(min(unique_age_values)), int(max(unique_age_values))
-
-# Age filter
 selected_age = st.sidebar.slider("Age", minValue, maxValue, (minValue, maxValue), 1)
 min_age, max_age = selected_age
 
@@ -52,7 +59,8 @@ min_age, max_age = selected_age
 df_selected_dataset = df_player_stat_dataset[
     (df_player_stat_dataset['Tm'].isin(selected_team) &
      df_player_stat_dataset['Pos'].isin(selected_position) &
-     df_player_stat_dataset['Age'].between(min_age, max_age))]
+     df_player_stat_dataset['Age'].between(min_age, max_age))
+]
 
 # Display dataframe
 st.header('Display Player Stats of Selected Team(s)')
@@ -72,13 +80,10 @@ st.markdown(download_dataset(df_selected_dataset), unsafe_allow_html=True)
 # Inter-correlation heatmap button
 if st.button("Inter-correlation Heatmap"):
     st.header("Inter-correlation Heatmap")
-
-    # Generate correlation matrix and plot
     corr = df_selected_dataset.corr()
     mask = np.zeros_like(corr)
     mask[np.triu_indices_from(mask)] = True
 
-    # Plot the inter-correlation heatmap
     with sns.axes_style("white"):
         f, ax = plt.subplots(figsize=(7, 5))
         try:
