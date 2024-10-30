@@ -29,8 +29,8 @@ def parse_data(year: str):
 # Load player statistics for the selected year
 df_player_stat_dataset = parse_data(str(selected_year))
 
-# Use 'Team' column instead of 'Tm'
-sorted_dataset_by_team = sorted(df_player_stat_dataset['Team'].unique())
+# Convert 'Tm' column to strings before sorting
+sorted_dataset_by_team = sorted(df_player_stat_dataset['Tm'].astype(str).unique())
 
 # Team filter
 selected_team = st.sidebar.multiselect("Team", sorted_dataset_by_team, sorted_dataset_by_team)
@@ -49,7 +49,7 @@ min_age, max_age = selected_age
 
 # Filtered dataset based on selections
 df_selected_dataset = df_player_stat_dataset[
-    (df_player_stat_dataset['Team'].isin(selected_team) &
+    (df_player_stat_dataset['Tm'].isin(selected_team) &
      df_player_stat_dataset['Pos'].isin(selected_position) &
      df_player_stat_dataset['Age'].between(min_age, max_age))]
 
