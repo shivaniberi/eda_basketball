@@ -19,17 +19,32 @@ Parsing basketball players' info from https://www.basketball-reference.com
 def parse_data(year: str):
     url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_game.html"
     parsed_df = pd.read_html(url, header=0)[0]
+    
+    # Remove duplicate header rows
     parsed_df = parsed_df.drop(parsed_df[parsed_df['Age'] == 'Age'].index)
     parsed_df = parsed_df.fillna(0)
     parsed_df = parsed_df.drop(['Rk'], axis=1)
 
     # Convert datatype to work with age filter
     parsed_df['Age'] = pd.to_numeric(parsed_df['Age'], errors='coerce').fillna(0).astype(int)
+    
+    # Debug: check column names
+    st.write(parsed_df.columns)
+    
     return parsed_df
 
 # Load player statistics for the selected year
 df_player_stat_dataset = parse_data(str(selected_year))
-sorted_dataset_by_team = sorted(df_player_stat_dataset.Tm.unique())
+
+# Debug: Check the first few rows of the DataFrame
+st.write(df_player_stat_dataset.head())
+
+# Check if 'Tm' column exists
+if 'Tm' in df_player_stat_dataset.columns:
+    sorted_dataset_by_team = sorted(df_player_stat_dataset.Tm.unique())
+else:
+    st.error("'Tm' column not found in the dataset. Check column names and data structure.")
+    sorted_dataset_by_team = []
 
 # Team filter
 selected_team = st.sidebar.multiselect("Team", sorted_dataset_by_team, sorted_dataset_by_team)
